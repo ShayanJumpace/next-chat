@@ -59,10 +59,12 @@ export async function joinRoom(req, res, next) {
     if (senderUserData !== null && receiverUserData !== null) {
       let roomData = senderUserData.userRooms.find((userRoom) => {
         return (
-          (userRoom.users[0].userName === senderUserData.userName &&
-            userRoom.users[1].userName === receiverUserData.userName) ||
-          (userRoom.users[1].userName === senderUserData.userName &&
-            userRoom.users[0].userName === receiverUserData.userName)
+          (userRoom.users[0]._id.toString() === senderUserData._id.toString() &&
+            userRoom.users[1]._id.toString() ===
+              receiverUserData._id.toString()) ||
+          (userRoom.users[1]._id.toString() === senderUserData._id.toString() &&
+            userRoom.users[0]._id.toString() ===
+              receiverUserData._id.toString())
         );
       });
 

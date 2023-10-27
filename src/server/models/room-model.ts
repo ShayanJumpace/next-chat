@@ -4,7 +4,7 @@ const roomSchema = new Schema(
   {
     roomtype: {
       type: String,
-      enum: ["private"],
+      enum: ["private", "public"],
       required: true,
       default: "private",
       trim: true,

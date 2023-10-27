@@ -13,7 +13,7 @@ export function setupSocket(server) {
 
   io.on("connection", (socket) => {
     socket.on("join_room", async (roomId) => {
-      socket.join(roomId);
+      socket.join(roomId.toString());
 
       const foundRoomData = await roomModel
         .findOne({
@@ -24,31 +24,34 @@ export function setupSocket(server) {
           select: "sender text",
         });
 
-      io.in(roomId).emit("receive_message", foundRoomData.messages);
+      io.in(roomId.toString()).emit("receive_message", foundRoomData.messages);
     });
 
     socket.on("send_message", async (message) => {
       const foundRoomData = await roomModel.findOne({
-        _id: message.roomId,
+        _id: message.room,
       });
 
       if (foundRoomData) {
         const messageData = await messageModel.create(message);
         await roomModel.updateOne(
-          { _id: message.roomId },
+          { _id: message.room },
           { messages: [...foundRoomData.messages, messageData._id] }
         );
 
         const updatedRoomData = await roomModel
           .findOne({
-            _id: message.roomId,
+            _id: message.room,
           })
           .populate({
             path: "messages",
             select: "sender text",
           });
 
-        io.in(message.roomId).emit("receive_message", updatedRoomData.messages);
+        io.in(message.room.toString()).emit(
+          "receive_message",
+          updatedRoomData.messages
+        );
       }
     });
 

@@ -7,8 +7,13 @@ import { socket } from "@/lib/socket.js";
 export default function NewMessge() {
   const [messages, setMessages] = useState([]);
 
-  const { currentUserName, selectedUserName, currentRoomId } =
-    useContext(ChatContext);
+  const {
+    currentUserId,
+    currentUserName,
+    selectedUserId,
+    selectedUserName,
+    currentRoomId,
+  } = useContext(ChatContext);
 
   useEffect(() => {
     socket.on("receive_message", (messages) => {
@@ -24,9 +29,9 @@ export default function NewMessge() {
     const formData = new FormData(event.currentTarget);
 
     const messageData = {
-      roomId: currentRoomId,
-      sender: currentUserName,
-      receiver: selectedUserName,
+      room: currentRoomId,
+      sender: currentUserId,
+      receiver: selectedUserId,
       text: formData.get("message"),
     };
 
@@ -57,7 +62,9 @@ export default function NewMessge() {
           return (
             <li
               className={
-                currentUserName === message.sender ? "text-left" : "text-right"
+                currentUserId === message.sender.toString()
+                  ? "text-left"
+                  : "text-right"
               }
               key={message._id}
             >

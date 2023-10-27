@@ -2,22 +2,22 @@ import { Schema, Types, model } from "mongoose";
 
 const messageSchema = new Schema(
   {
-    roomId: {
-      type: String,
+    room: {
+      type: Types.ObjectId,
       required: true,
-      // ref: "room",
+      ref: "room",
     },
 
     sender: {
-      type: String,
+      type: Types.ObjectId,
       required: true,
-      // ref: "user",
+      ref: "user",
     },
 
     receiver: {
-      type: String,
+      type: Types.ObjectId,
       required: true,
-      // ref: "user",
+      ref: "user",
     },
 
     text: {
