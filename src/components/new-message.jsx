@@ -33,6 +33,11 @@ export default function NewMessge() {
       sender: currentUserId,
       receiver: selectedUserId,
       text: formData.get("message"),
+      attachment: {
+        fileName: formData.get("attachment").name,
+        fileType: formData.get("attachment").type,
+        fileData: formData.get("attachment"),
+      },
     };
 
     socket.emit("send_message", messageData);
@@ -43,17 +48,29 @@ export default function NewMessge() {
       <h3 className="text-3xl mb-2">{`${currentUserName} -> ${selectedUserName}`}</h3>
 
       <form
-        className="flex mb-12 w-1/4 gap-4 items-center"
+        className="flex mb-12 w-1/4 gap-4 justify-center items-center"
         onSubmit={handleNewMessageSubmit}
       >
         <input
-          className="p-2 rounded text-gray-950"
+          className="p-2 w-4/6 h-full rounded text-gray-950"
           type="text"
           name="message"
           placeholder="Message"
         />
-        <button className="bg-white text-gray-950 p-2 rounded" type="submit">
-          Send
+        <label className="w-1/6 cursor-pointer text-gray-950 bg-white rounded text-center text-3xl">
+          +
+          <input
+            className="w-full hidden h-full rounded text-gray-950"
+            type="file"
+            name="attachment"
+            placeholder="Attachment"
+          />
+        </label>
+        <button
+          className="bg-white w-1/6 text-xl font-bold text-gray-950 h-full rounded"
+          type="submit"
+        >
+          {`>`}
         </button>
       </form>
 
@@ -68,7 +85,10 @@ export default function NewMessge() {
               }
               key={message._id}
             >
-              {message.text}
+              <p>{message.text}</p>
+              {message.attachment && (
+                <img src={`/uploads/${message.attachment.fileName}`} alt="" />
+              )}
             </li>
           );
         })}
