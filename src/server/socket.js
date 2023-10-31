@@ -31,7 +31,7 @@ export function setupSocket(server) {
         })
         .populate({
           path: "messages",
-          select: "sender text attachment",
+          select: "room sender receiver text attachment isSeen",
           populate: {
             path: "attachment",
             model: "file",
@@ -74,13 +74,13 @@ export function setupSocket(server) {
           { messages: [...foundRoomData.messages, messageData._id] }
         );
 
-        const updatedRoomData = await roomModel
+        foundRoomData = await roomModel
           .findOne({
             _id: message.room,
           })
           .populate({
             path: "messages",
-            select: "sender text attachment",
+            select: "room sender receiver text attachment isSeen",
             populate: {
               path: "attachment",
               model: "file",
@@ -89,20 +89,35 @@ export function setupSocket(server) {
 
         io.in(message.room.toString()).emit(
           "receive_message",
-          updatedRoomData.messages
+          foundRoomData.messages
         );
       }
     });
 
-    // socket.on("messages_seen", async (messages) => {
-    //   console.log(messages);
-    //   messages.forEach(async (message) => {
-    //     await messageModel.findOneAndUpdate(
-    //       { _id: message._doc._id },
-    //       { isSeen: true }
-    //     );
-    //   });
-    // });
+    socket.on("messages_seen", async (message) => {
+      await messageModel.findOneAndUpdate(
+        { _id: message._id },
+        { isSeen: true }
+      );
+
+      foundRoomData = await roomModel
+        .findOne({
+          _id: message.room,
+        })
+        .populate({
+          path: "messages",
+          select: "room sender receiver text attachment isSeen",
+          populate: {
+            path: "attachment",
+            model: "file",
+          },
+        });
+
+      io.in(message.room.toString()).emit(
+        "receive_message",
+        foundRoomData.messages
+      );
+    });
 
     socket.on("disconnect", () => {});
   });

@@ -19,9 +19,11 @@ export default function NewMessge() {
     socket.on("receive_message", (messages) => {
       setMessages(messages);
 
-      if (true) {
-        socket.emit("messages_seen", messages);
-      }
+      messages.forEach((message) => {
+        if (message.receiver.toString() === currentUserId) {
+          socket.emit("messages_seen", message);
+        }
+      });
     });
 
     return () => socket.off("receive_message");
@@ -93,6 +95,7 @@ export default function NewMessge() {
               {message.attachment && (
                 <img src={`/uploads/${message.attachment.fileName}`} alt="" />
               )}
+              <p>isSeen: {message.isSeen ? "Seen" : "Not Seen"}</p>
             </li>
           );
         })}
