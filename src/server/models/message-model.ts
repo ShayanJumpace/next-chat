@@ -31,6 +31,12 @@ const messageSchema = new Schema(
       required: false,
       trim: true,
     },
+
+    isSeen: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
   },
   {
     timestamps: true,

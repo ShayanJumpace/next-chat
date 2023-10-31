@@ -1,12 +1,12 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { writeFile } from "node:fs";
+
 import { Server } from "socket.io";
 
 import roomModel from "./models/room-model.ts";
 import messageModel from "./models/message-model.ts";
 import fileModel from "./models/file-model.ts";
-import { writeFile } from "node:fs";
-
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,10 +20,12 @@ export function setupSocket(server) {
   });
 
   io.on("connection", (socket) => {
+    let foundRoomData;
+
     socket.on("join_room", async (roomId) => {
       socket.join(roomId.toString());
 
-      const foundRoomData = await roomModel
+      foundRoomData = await roomModel
         .findOne({
           _id: roomId,
         })
@@ -40,9 +42,9 @@ export function setupSocket(server) {
     });
 
     socket.on("send_message", async (message) => {
-      const foundRoomData = await roomModel.findOne({
-        _id: message.room,
-      });
+      // const foundRoomData = await roomModel.findOne({
+      //   _id: message.room,
+      // });
 
       if (foundRoomData) {
         if (message.attachment.fileName !== "") {
@@ -91,6 +93,16 @@ export function setupSocket(server) {
         );
       }
     });
+
+    // socket.on("messages_seen", async (messages) => {
+    //   console.log(messages);
+    //   messages.forEach(async (message) => {
+    //     await messageModel.findOneAndUpdate(
+    //       { _id: message._doc._id },
+    //       { isSeen: true }
+    //     );
+    //   });
+    // });
 
     socket.on("disconnect", () => {});
   });

@@ -18,6 +18,10 @@ export default function NewMessge() {
   useEffect(() => {
     socket.on("receive_message", (messages) => {
       setMessages(messages);
+
+      if (true) {
+        socket.emit("messages_seen", messages);
+      }
     });
 
     return () => socket.off("receive_message");
