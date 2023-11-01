@@ -6,6 +6,7 @@ import { socket } from "@/lib/socket.js";
 
 export default function NewMessge() {
   const [messages, setMessages] = useState([]);
+  const [usersTyping, setUsersTyping] = useState([]);
 
   const {
     currentUserId,
@@ -20,13 +21,36 @@ export default function NewMessge() {
       setMessages(messages);
 
       messages.forEach((message) => {
-        if (message.receiver.toString() === currentUserId) {
+        if (
+          message.receiver.toString() === currentUserId &&
+          message.isSeen === false
+        ) {
           socket.emit("messages_seen", message);
         }
       });
     });
 
     return () => socket.off("receive_message");
+  }, []);
+
+  useEffect(() => {
+    socket.on("receive_typing_flag", (currentUserData) => {
+      setUsersTyping((usersTyping) => [...usersTyping, currentUserData]);
+    });
+
+    return () => socket.off("receive_typing_flag");
+  }, []);
+
+  useEffect(() => {
+    socket.on("receive_clear_typing_flag", (currentUserData) => {
+      setUsersTyping((usersTyping) =>
+        usersTyping.filter((user) => {
+          return user._id !== currentUserData._id;
+        })
+      );
+    });
+
+    return () => socket.off("receive_clear_typing_flag");
   }, []);
 
   async function handleNewMessageSubmit(event) {
@@ -52,6 +76,11 @@ export default function NewMessge() {
   return (
     <article className="flex flex-col justify-center items-center h-full">
       <h3 className="text-3xl mb-2">{`${currentUserName} -> ${selectedUserName}`}</h3>
+      {usersTyping.map((user) => {
+        if (user._id.toString() !== currentUserId) {
+          return <p>{user.userName} Typing...</p>;
+        }
+      })}
 
       <form
         className="flex mb-12 w-1/4 gap-4 justify-center items-center"
@@ -62,6 +91,12 @@ export default function NewMessge() {
           type="text"
           name="message"
           placeholder="Message"
+          onFocus={() => {
+            socket.emit("send_typing_flag", currentRoomId, currentUserId);
+          }}
+          onBlur={() => {
+            socket.emit("send_clear_typing_flag", currentRoomId, currentUserId);
+          }}
         />
         <label className="w-1/6 cursor-pointer text-gray-950 bg-white rounded text-center text-3xl">
           +
@@ -95,7 +130,7 @@ export default function NewMessge() {
               {message.attachment && (
                 <img src={`/uploads/${message.attachment.fileName}`} alt="" />
               )}
-              <p>isSeen: {message.isSeen ? "Seen" : "Not Seen"}</p>
+              {message.isSeen ? "✔️" : "❌"}
             </li>
           );
         })}

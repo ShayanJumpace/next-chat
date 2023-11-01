@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import roomModel from "./models/room-model.ts";
 import messageModel from "./models/message-model.ts";
 import fileModel from "./models/file-model.ts";
+import userModel from "./models/user-model.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,27 +26,12 @@ export function setupSocket(server) {
     socket.on("join_room", async (roomId) => {
       socket.join(roomId.toString());
 
-      foundRoomData = await roomModel
-        .findOne({
-          _id: roomId,
-        })
-        .populate({
-          path: "messages",
-          select: "room sender receiver text attachment isSeen",
-          populate: {
-            path: "attachment",
-            model: "file",
-          },
-        });
+      foundRoomData = await getRoomData(roomId);
 
       io.in(roomId.toString()).emit("receive_message", foundRoomData.messages);
     });
 
     socket.on("send_message", async (message) => {
-      // const foundRoomData = await roomModel.findOne({
-      //   _id: message.room,
-      // });
-
       if (foundRoomData) {
         if (message.attachment.fileName !== "") {
           const attachment = {
@@ -74,18 +60,7 @@ export function setupSocket(server) {
           { messages: [...foundRoomData.messages, messageData._id] }
         );
 
-        foundRoomData = await roomModel
-          .findOne({
-            _id: message.room,
-          })
-          .populate({
-            path: "messages",
-            select: "room sender receiver text attachment isSeen",
-            populate: {
-              path: "attachment",
-              model: "file",
-            },
-          });
+        foundRoomData = await getRoomData(message.room);
 
         io.in(message.room.toString()).emit(
           "receive_message",
@@ -100,18 +75,7 @@ export function setupSocket(server) {
         { isSeen: true }
       );
 
-      foundRoomData = await roomModel
-        .findOne({
-          _id: message.room,
-        })
-        .populate({
-          path: "messages",
-          select: "room sender receiver text attachment isSeen",
-          populate: {
-            path: "attachment",
-            model: "file",
-          },
-        });
+      foundRoomData = await getRoomData(message.room);
 
       io.in(message.room.toString()).emit(
         "receive_message",
@@ -119,6 +83,36 @@ export function setupSocket(server) {
       );
     });
 
+    socket.on("send_typing_flag", async (roomId, userId) => {
+      const currentUserData = await userModel.findOne({ _id: userId });
+
+      io.in(roomId.toString()).emit("receive_typing_flag", currentUserData);
+    });
+
+    socket.on("send_clear_typing_flag", async (roomId, userId) => {
+      const currentUserData = await userModel.findOne({ _id: userId });
+
+      io.in(roomId.toString()).emit(
+        "receive_clear_typing_flag",
+        currentUserData
+      );
+    });
+
     socket.on("disconnect", () => {});
   });
+}
+
+async function getRoomData(roomId) {
+  return await roomModel
+    .findOne({
+      _id: roomId,
+    })
+    .populate({
+      path: "messages",
+      select: "room sender receiver text attachment isSeen",
+      populate: {
+        path: "attachment",
+        model: "file",
+      },
+    });
 }
