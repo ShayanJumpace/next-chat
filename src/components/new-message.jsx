@@ -3,7 +3,8 @@
 import { useContext, useState, useEffect } from "react";
 import { ChatContext } from "@/app/layout.tsx";
 import { socket } from "@/lib/socket.js";
-
+import Image from "next/image.js";
+import Link from "next/link.js";
 export default function NewMessge() {
   const [messages, setMessages] = useState([]);
   const [usersTyping, setUsersTyping] = useState([]);
@@ -17,7 +18,7 @@ export default function NewMessge() {
   } = useContext(ChatContext);
 
   useEffect(() => {
-    socket.on("receive_message", (messages) => {
+    socket.on("update_messages", (messages) => {
       setMessages(messages);
 
       messages.forEach((message) => {
@@ -25,12 +26,12 @@ export default function NewMessge() {
           message.receiver.toString() === currentUserId &&
           message.isSeen === false
         ) {
-          socket.emit("messages_seen", message);
+          socket.emit("update_seen_message", message);
         }
       });
     });
 
-    return () => socket.off("receive_message");
+    return () => socket.off("update_messages");
   }, []);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function NewMessge() {
       })}
 
       <form
-        className="flex mb-12 w-1/4 gap-4 justify-center items-center"
+        className="flex mb-12 w-1/2 lg:w-1/4 gap-4 justify-center items-center"
         onSubmit={handleNewMessageSubmit}
       >
         <input
@@ -92,10 +93,10 @@ export default function NewMessge() {
           name="message"
           placeholder="Message"
           onFocus={() => {
-            socket.emit("send_typing_flag", currentRoomId, currentUserId);
+            socket.emit("send_typing_user", currentRoomId, currentUserId);
           }}
           onBlur={() => {
-            socket.emit("send_clear_typing_flag", currentRoomId, currentUserId);
+            socket.emit("clear_typing_user", currentRoomId, currentUserId);
           }}
         />
         <label className="w-1/6 cursor-pointer text-gray-950 bg-white rounded text-center text-3xl">
@@ -115,7 +116,7 @@ export default function NewMessge() {
         </button>
       </form>
 
-      <ul className="w-1/4">
+      <ul className="w-1/2 lg:w-1/4">
         {messages.map((message) => {
           return (
             <li
@@ -126,10 +127,9 @@ export default function NewMessge() {
               }
               key={message._id}
             >
-              <p>{message.text}</p>
-              {message.attachment && (
-                <img src={`/uploads/${message.attachment.fileName}`} alt="" />
-              )}
+              {message.attachment && <Fileviewer tag={message.attachment} />}
+              {message.attachment && message.text && <br />}
+              <p className="inline-block">{message.text}</p>
               {message.isSeen ? "✔️" : "❌"}
             </li>
           );
@@ -138,3 +138,28 @@ export default function NewMessge() {
     </article>
   );
 }
+
+const Fileviewer = (props) => {
+  const { tag } = props;
+  // console.log(tag.fileType);
+  // if (tag.fileType === "image/png") {
+  //   return <img src={`/uploads/${tag.fileName}`} alt="" />;
+  // }
+  // if (tag.fileType === "image/png" || tag.fileType === "image/jpeg") {
+  //   return <img src={`/uploads/${tag.fileName}`} alt="" />;
+  // }
+  // if (tag.fileType === "application/pdf") {
+  //   console.log(tag);
+  return (
+    <>
+      <Link
+        className="text-blue-600 underline"
+        href={`http://192.168.1.42:4321/${tag.fileName}`}
+        target="_blank"
+      >
+        {tag.fileName}
+      </Link>
+    </>
+  );
+  // }
+};
